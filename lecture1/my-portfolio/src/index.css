@@ -1,0 +1,56 @@
+/* CSS 초기화 */
+* {
+  box-sizing: border-box;
+}
+
+/* HTML, Body 초기화 */
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  min-height: 100vh;
+}
+
+/* Root 앱 컨테이너 설정 */
+#root {
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 컬러 팔레트 디자인 시스템 - 스타벅스 기반 */
+:root {
+  /* Primary Colors */
+  --color-primary: #00704A;
+  --color-primary-light: #00A862;
+  --color-primary-dark: #1E3932;
+
+  /* Secondary Colors */
+  --color-secondary: #D4145A;
+  --color-accent: #F7E6C4;
+
+  /* Background Colors */
+  --color-bg-primary: #FFFFFF;
+  --color-bg-secondary: #1E3932;
+  --color-bg-banner: #D4145A;
+
+  /* Text Colors */
+  --color-text-primary: #1E3932;
+  --color-text-secondary: #333333;
+  --color-text-muted: #666666;
+  --color-text-light: #FFFFFF;
+
+  /* Interactive Colors */
+  --color-button-primary: #00704A;
+  --color-button-hover: #00A862;
+  --color-link: #00704A;
+  --color-link-hover: #1E3932;
+  --color-button-outline: #FFFFFF;
+  --color-button-accent: #D4145A;
+
+  /* Border Colors */
+  --color-border-primary: #C8102E;
+  --color-border-light: #D4D4D4;
+  --color-border-white: #FFFFFF;
+}
