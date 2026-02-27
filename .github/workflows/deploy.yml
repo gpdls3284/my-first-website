@@ -35,8 +35,8 @@ jobs:
         run: npm run build
         working-directory: lecture1/mini_sns
         env:
-          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
-          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          VITE_SUPABASE_URL: https://tomkwxgshpurmssmxepx.supabase.co
+          VITE_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRvbWt3eGdzaHB1cm1zc214ZXB4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIxMzY2NDQsImV4cCI6MjA4NzcxMjY0NH0.634u3uk5WZBmzgD7mPARbRkdRZ9JSoNxYCNw9fx1Wk0
           VITE_UNSPLASH_ACCESS_KEY: ${{ secrets.VITE_UNSPLASH_ACCESS_KEY }}
 
       - name: Setup Pages
