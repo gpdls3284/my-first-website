@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Box from '@mui/material/Box';
 import Container from '@mui/material/Container';
@@ -14,6 +14,7 @@ import Alert from '@mui/material/Alert';
 import AppBar from '@mui/material/AppBar';
 import Toolbar from '@mui/material/Toolbar';
 import IconButton from '@mui/material/IconButton';
+import CircularProgress from '@mui/material/CircularProgress';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
@@ -21,26 +22,6 @@ import LocationOnIcon from '@mui/icons-material/LocationOn';
 import { supabase } from '../lib/supabase';
 
 const UNSPLASH_ACCESS_KEY = import.meta.env.VITE_UNSPLASH_ACCESS_KEY;
-
-// 여행 관련 Unsplash 이미지 (API 키 없이 사용 가능한 고정 URL)
-const TRAVEL_IMAGES = [
-  'https://images.unsplash.com/photo-1506929562872-bb421503ef21?w=600',
-  'https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=600',
-  'https://images.unsplash.com/photo-1488085061387-422e29b40080?w=600',
-  'https://images.unsplash.com/photo-1500835556837-99ac94a94552?w=600',
-  'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=600',
-  'https://images.unsplash.com/photo-1503220317375-aaad61436b1b?w=600',
-  'https://images.unsplash.com/photo-1452421822248-d4c2b47f0c81?w=600',
-  'https://images.unsplash.com/photo-1530521954074-e64f6810b32d?w=600',
-  'https://images.unsplash.com/photo-1543158181-e6f9f6712055?w=600',
-  'https://images.unsplash.com/photo-1519451241324-20b4ea2c4220?w=600',
-  'https://images.unsplash.com/photo-1522199710521-72d69614c702?w=600',
-  'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600',
-];
-
-function shuffle(arr) {
-  return [...arr].sort(() => Math.random() - 0.5);
-}
 
 /**
  * CreatePostPage - 게시물 작성 페이지
@@ -53,14 +34,45 @@ function CreatePostPage({ currentUser }) {
   const [step, setStep] = useState(1);
   const [caption, setCaption] = useState('');
   const [location, setLocation] = useState('');
-  const [images, setImages] = useState(shuffle(TRAVEL_IMAGES).slice(0, 6));
+  const [images, setImages] = useState([]);
   const [selectedImage, setSelectedImage] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+  const [loadingImages, setLoadingImages] = useState(false);
   const [error, setError] = useState('');
+  const [imageError, setImageError] = useState('');
 
-  const handleRefreshImages = () => {
-    setImages(shuffle(TRAVEL_IMAGES).slice(0, 6));
+  const fetchUnsplashImages = async () => {
+    setLoadingImages(true);
+    setImageError('');
     setSelectedImage(null);
+
+    const query = location.trim() || 'travel';
+    const page = Math.floor(Math.random() * 5) + 1;
+
+    try {
+      const res = await fetch(
+        `https://api.unsplash.com/search/photos?query=${encodeURIComponent(query)}&per_page=6&page=${page}&orientation=landscape`,
+        { headers: { Authorization: `Client-ID ${UNSPLASH_ACCESS_KEY}` } }
+      );
+      const data = await res.json();
+
+      if (data.results && data.results.length > 0) {
+        setImages(data.results.map((img) => img.urls.regular));
+      } else {
+        setImageError('검색 결과가 없습니다. 다른 장소명을 입력해보세요.');
+        setImages([]);
+      }
+    } catch {
+      setImageError('이미지를 불러오지 못했습니다. 다시 시도해주세요.');
+    } finally {
+      setLoadingImages(false);
+    }
+  };
+
+  const handleGoToStep2 = () => {
+    setError('');
+    setStep(2);
+    fetchUnsplashImages();
   };
 
   const handleSubmit = async () => {
@@ -143,13 +155,14 @@ function CreatePostPage({ currentUser }) {
               InputProps={{
                 startAdornment: <LocationOnIcon sx={{ mr: 1, color: 'primary.main' }} />,
               }}
+              helperText='장소를 입력하면 관련 이미지를 추천해드려요'
             />
 
             <Button
               variant='contained'
               fullWidth
               size='large'
-              onClick={() => { setError(''); setStep(2); }}
+              onClick={handleGoToStep2}
               disabled={!caption.trim()}
               sx={{ borderRadius: 2, py: 1.5, fontWeight: 700 }}
             >
@@ -164,59 +177,68 @@ function CreatePostPage({ currentUser }) {
               2단계: 사진 선택 (선택사항)
             </Typography>
             <Typography variant='body2' color='text.secondary' sx={{ mb: 2 }}>
-              마음에 드는 사진을 선택하거나 건너뛰세요
+              { location ? `"${location}" 관련 사진을 불러왔어요` : '여행 사진을 선택하거나 건너뛰세요' }
             </Typography>
 
             <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1 }}>
               <Button
                 startIcon={<RefreshIcon />}
-                onClick={handleRefreshImages}
+                onClick={fetchUnsplashImages}
                 size='small'
                 variant='outlined'
+                disabled={loadingImages}
               >
                 다른 사진 보기
               </Button>
             </Box>
 
-            <Grid container spacing={1} sx={{ mb: 3 }}>
-              { images.map((url, idx) => (
-                <Grid size={{ xs: 6, sm: 4 }} key={idx}>
-                  <Card
-                    elevation={selectedImage === url ? 4 : 1}
-                    sx={{
-                      borderRadius: 2,
-                      border: selectedImage === url ? '3px solid' : '3px solid transparent',
-                      borderColor: selectedImage === url ? 'primary.main' : 'transparent',
-                      position: 'relative',
-                    }}
-                  >
-                    <CardActionArea onClick={() => setSelectedImage(selectedImage === url ? null : url)}>
-                      <CardMedia
-                        component='img'
-                        height='120'
-                        image={url}
-                        alt={`여행 이미지 ${idx + 1}`}
-                        sx={{ objectFit: 'cover' }}
-                      />
-                      { selectedImage === url && (
-                        <Box
-                          sx={{
-                            position: 'absolute',
-                            top: 4,
-                            right: 4,
-                            bgcolor: 'primary.main',
-                            borderRadius: '50%',
-                            display: 'flex',
-                          }}
-                        >
-                          <CheckCircleIcon sx={{ color: 'white', fontSize: 20 }} />
-                        </Box>
-                      )}
-                    </CardActionArea>
-                  </Card>
-                </Grid>
-              ))}
-            </Grid>
+            { loadingImages ? (
+              <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
+                <CircularProgress />
+              </Box>
+            ) : imageError ? (
+              <Alert severity='warning' sx={{ mb: 2 }}>{ imageError }</Alert>
+            ) : (
+              <Grid container spacing={1} sx={{ mb: 3 }}>
+                { images.map((url, idx) => (
+                  <Grid size={{ xs: 6, sm: 4 }} key={idx}>
+                    <Card
+                      elevation={selectedImage === url ? 4 : 1}
+                      sx={{
+                        borderRadius: 2,
+                        border: selectedImage === url ? '3px solid' : '3px solid transparent',
+                        borderColor: selectedImage === url ? 'primary.main' : 'transparent',
+                        position: 'relative',
+                      }}
+                    >
+                      <CardActionArea onClick={() => setSelectedImage(selectedImage === url ? null : url)}>
+                        <CardMedia
+                          component='img'
+                          height='120'
+                          image={url}
+                          alt={`여행 이미지 ${idx + 1}`}
+                          sx={{ objectFit: 'cover' }}
+                        />
+                        { selectedImage === url && (
+                          <Box
+                            sx={{
+                              position: 'absolute',
+                              top: 4,
+                              right: 4,
+                              bgcolor: 'primary.main',
+                              borderRadius: '50%',
+                              display: 'flex',
+                            }}
+                          >
+                            <CheckCircleIcon sx={{ color: 'white', fontSize: 20 }} />
+                          </Box>
+                        )}
+                      </CardActionArea>
+                    </Card>
+                  </Grid>
+                ))}
+              </Grid>
+            )}
 
             { selectedImage && (
               <Chip
